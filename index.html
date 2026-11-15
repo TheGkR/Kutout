@@ -13,7 +13,7 @@
 </head>
 <body>
 <main>
-  <h1>Kutout</h1>
+  <h1>Cutout</h1>
   <p class="lede">Remove the background from a photo. The AI model runs inside your browser, so your image never leaves your device.</p>
 
   <label class="drop" id="drop" tabindex="0" role="button" aria-label="Choose an image">
@@ -28,11 +28,30 @@
   </div>
 
   <section class="work" id="work" hidden>
+    <div class="tabs" role="tablist" aria-label="View">
+      <button class="tab" id="tabCompare" role="tab" aria-selected="true">Compare</button>
+      <button class="tab" id="tabEdit" role="tab" aria-selected="false">Touch up</button>
+    </div>
+
     <div class="stage" id="stage">
-      <img id="before" alt="Original image">
-      <div class="after checker" id="afterBox"><img id="after" alt="Image with background removed"></div>
+      <img class="before" id="before" alt="Original image">
+      <div class="after checker" id="afterBox"><canvas id="canvas" aria-label="Image with background removed"></canvas></div>
+      <img class="ghost" id="ghost" alt="" hidden>
       <div class="handle"></div>
       <input class="slider" id="slider" type="range" min="0" max="100" value="50" aria-label="Compare original and result">
+      <div class="ring" id="ring" hidden></div>
+    </div>
+
+    <div class="tools" id="tools" hidden>
+      <div class="seg" role="group" aria-label="Brush tool">
+        <button class="btn" data-tool="erase" aria-pressed="true">Erase</button>
+        <button class="btn" data-tool="restore" aria-pressed="false">Restore</button>
+      </div>
+      <label class="range">Size <input id="size" type="range" min="8" max="160" value="40"></label>
+      <label class="range">Softness <input id="soft" type="range" min="0" max="100" value="50"></label>
+      <label class="check"><input id="showOrig" type="checkbox"> Show original</label>
+      <button class="btn" id="undo" disabled>Undo</button>
+      <button class="btn" id="resetEdits">Reset edits</button>
     </div>
 
     <div class="controls">
@@ -42,6 +61,8 @@
         <button class="sw" data-bg="#ffffff" style="background:#fff" aria-pressed="false" aria-label="White"></button>
         <button class="sw" data-bg="#17202e" style="background:#17202e" aria-pressed="false" aria-label="Dark"></button>
         <input class="sw" id="custom" type="color" value="#2b4fff" aria-label="Custom color">
+        <button class="sw sw-img" id="bgImgBtn" aria-pressed="false" aria-label="Use an image as background" title="Use an image as background">+</button>
+        <input id="bgFile" type="file" accept="image/*" hidden>
       </div>
       <div class="spacer"></div>
       <button class="btn" id="again">Choose another image</button>
