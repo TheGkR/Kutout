@@ -15,7 +15,6 @@ Remove the background from an image, right in your browser. An AI segmentation m
 
 - Drag and drop, or choose an image (JPG, PNG, WebP)
 - Before/after comparison slider
-- Touch-up brush: erase leftover background or restore parts of the subject the AI removed, with adjustable size and softness, a "show original" overlay and undo (Ctrl/Cmd+Z)
 - Backgrounds: transparent, white, dark, any custom color, or an image of your own
 - Download the result as a PNG
 - No build step, no backend, no tracking
@@ -48,15 +47,13 @@ index.html   Page markup
 logo.png     Creator logo (logo-light.png is the dark-mode version)
 favicon.png  Browser tab icon
 style.css    Styles (light and dark mode)
-script.js    Upload, background removal, touch-up brush, backgrounds, download
+script.js    Upload, background removal, comparison slider, backgrounds, download
 LICENSE      GNU AGPL v3
 ```
 
 ## How it works
 
-`script.js` imports [`@imgly/background-removal`](https://github.com/imgly/background-removal-js) from the jsDelivr CDN and calls `removeBackground(file)`, which returns a transparent PNG blob. The comparison view stacks the original photo and the result and clips the top layer with a CSS `clip-path`.
-
-The result is drawn on a canvas as the original pixels masked by an alpha mask that starts from the AI cutout. The Erase brush removes alpha from the mask and the Restore brush paints it back, so restored areas show the real photo. Only the part of the canvas under the brush is redrawn on each step, and undo stores just the changed rectangle of each stroke. Download composes the chosen background (color or image, scaled to cover) with the result at full resolution and exports a PNG.
+`script.js` imports [`@imgly/background-removal`](https://github.com/imgly/background-removal-js) from the jsDelivr CDN and calls `removeBackground(file)`, which returns a transparent PNG blob. The comparison view stacks the original photo and the result and clips the top layer with a CSS `clip-path`. Download redraws the result onto a canvas, fills the chosen background (a color, or an image scaled to cover), and exports a full-resolution PNG.
 
 The library version is pinned in the import line at the top of `script.js`. After changing it, test the page, because newer releases may need extra setup such as the `onnxruntime-web` peer dependency.
 
@@ -65,7 +62,9 @@ The library version is pinned in the import line at the top of `script.js`. Afte
 Issues and pull requests are welcome. Good first ideas:
 
 - Batch processing of several images
-- Redo, plus background image position and blur controls
+- A brush to restore or erase parts of the cutout
+- Background image position and blur controls
+- Batch processing of several images
 - Self-hosting the model files for offline use
 
 Please keep the project dependency-free and buildless where possible.
