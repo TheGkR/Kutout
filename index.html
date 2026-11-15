@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cutout – remove image backgrounds in your browser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <h1>Cutout</h1>
+  <p class="lede">Remove the background from a photo. The AI model runs inside your browser, so your image never leaves your device.</p>
+
+  <label class="drop" id="drop" tabindex="0" role="button" aria-label="Choose an image">
+    <strong>Drop an image here</strong>
+    <span>or click to choose a JPG, PNG or WebP</span>
+    <input id="file" type="file" accept="image/*" hidden>
+  </label>
+
+  <div class="status" id="status" role="status" hidden>
+    <span id="statusText">Starting…</span>
+    <div class="bar"><i id="barFill"></i></div>
+  </div>
+
+  <section class="work" id="work" hidden>
+    <div class="stage" id="stage">
+      <img id="before" alt="Original image">
+      <div class="after checker" id="afterBox"><img id="after" alt="Image with background removed"></div>
+      <div class="handle"></div>
+      <input class="slider" id="slider" type="range" min="0" max="100" value="50" aria-label="Compare original and result">
+    </div>
+
+    <div class="controls">
+      <div class="swatches" id="swatches">
+        <span>Background</span>
+        <button class="sw checker" data-bg="transparent" aria-pressed="true" aria-label="Transparent"></button>
+        <button class="sw" data-bg="#ffffff" style="background:#fff" aria-pressed="false" aria-label="White"></button>
+        <button class="sw" data-bg="#17202e" style="background:#17202e" aria-pressed="false" aria-label="Dark"></button>
+        <input class="sw" id="custom" type="color" value="#2b4fff" aria-label="Custom color">
+      </div>
+      <div class="spacer"></div>
+      <button class="btn" id="again">Choose another image</button>
+      <button class="btn primary" id="download">Download PNG</button>
+    </div>
+  </section>
+
+  <p class="note">The first image downloads the model (about 40–80 MB) and takes a while. After that it is cached and much faster.</p>
+
+  <footer>
+    Open source under AGPL-3.0.
+    <a href="https://github.com/YOUR-USERNAME/cutout">Source code</a>.
+    Powered by <a href="https://github.com/imgly/background-removal-js">@imgly/background-removal</a>.
+  </footer>
+</main>
+
+<script type="module" src="script.js"></script>
+</body>
+</html>
