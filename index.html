@@ -28,30 +28,13 @@
   </div>
 
   <section class="work" id="work" hidden>
-    <div class="tabs" role="tablist" aria-label="View">
-      <button class="tab" id="tabCompare" role="tab" aria-selected="true">Compare</button>
-      <button class="tab" id="tabEdit" role="tab" aria-selected="false">Touch up</button>
-    </div>
-
     <div class="stage" id="stage">
       <img class="before" id="before" alt="Original image">
-      <div class="after checker" id="afterBox"><canvas id="canvas" aria-label="Image with background removed"></canvas></div>
-      <img class="ghost" id="ghost" alt="" hidden>
+      <div class="after checker" id="afterBox">
+        <canvas id="canvas" aria-label="Image with background removed"></canvas>
+      </div>
       <div class="handle"></div>
       <input class="slider" id="slider" type="range" min="0" max="100" value="50" aria-label="Compare original and result">
-      <div class="ring" id="ring" hidden></div>
-    </div>
-
-    <div class="tools" id="tools" hidden>
-      <div class="seg" role="group" aria-label="Brush tool">
-        <button class="btn" data-tool="erase" aria-pressed="true">Erase</button>
-        <button class="btn" data-tool="restore" aria-pressed="false">Restore</button>
-      </div>
-      <label class="range">Size <input id="size" type="range" min="8" max="160" value="40"></label>
-      <label class="range">Softness <input id="soft" type="range" min="0" max="100" value="50"></label>
-      <label class="check"><input id="showOrig" type="checkbox"> Show original</label>
-      <button class="btn" id="undo" disabled>Undo</button>
-      <button class="btn" id="resetEdits">Reset edits</button>
     </div>
 
     <div class="controls">
@@ -88,3 +71,295 @@
 <script type="module" src="script.js"></script>
 </body>
 </html>
+
+// Pinned version: update it when you want a newer release.
+import { removeBackground } from "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.5.5/+esm";
+
+const $ = (id) => document.getElementById(id);
+const drop = $("drop"), fileInput = $("file"), status = $("status"),
+      statusText = $("statusText"), barFill = $("barFill"), work = $("work"),
+      before = $("before"), afterBox = $("afterBox"), canvas = $("canvas"),
+      stage = $("stage"), slider = $("slider");
+const ctx = canvas.getContext("2d");
+
+let srcUrl = null, bg = "transparent", bgImg = null, bgUrl = null;
+let W = 0, H = 0;
+
+const loadImage = (url) => new Promise((resolve, reject) => {
+  const img = new Image();
+  img.onload = () => resolve(img);
+  img.onerror = reject;
+  img.src = url;
+});
+
+/* ---------- Upload and background removal ---------- */
+drop.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    fileInput.click();
+  }
+});
+fileInput.addEventListener("change", () => {
+  if (fileInput.files[0]) handle(fileInput.files[0]);
+});
+["dragenter", "dragover"].forEach(type => drop.addEventListener(type, (e) => {
+  e.preventDefault();
+  drop.classList.add("over");
+}));
+["dragleave", "drop"].forEach(type => drop.addEventListener(type, (e) => {
+  e.preventDefault();
+  drop.classList.remove("over");
+}));
+drop.addEventListener("drop", (e) => {
+  const file = e.dataTransfer.files[0];
+  if (file) handle(file);
+});
+
+async function handle(file) {
+  if (!file.type.startsWith("image/")) {
+    showError("That file is not an image. Choose a JPG, PNG or WebP.");
+    return;
+  }
+
+  if (srcUrl) URL.revokeObjectURL(srcUrl);
+  srcUrl = URL.createObjectURL(file);
+  drop.hidden = true;
+  work.hidden = true;
+  status.hidden = false;
+  statusText.textContent = "Loading the model…";
+  barFill.style.width = "0";
+
+  try {
+    const blob = await removeBackground(file, {
+      progress: (key, current, total) => {
+        const pct = total ? Math.round((current / total) * 100) : 0;
+        statusText.textContent = key.startsWith("fetch")
+          ? `Downloading model… ${pct}%`
+          : "Removing the background…";
+        barFill.style.width = pct + "%";
+      },
+      output: { format: "image/png" }
+    });
+
+    const resultUrl = URL.createObjectURL(blob);
+    const [original, cutout] = await Promise.all([
+      loadImage(srcUrl),
+      loadImage(resultUrl)
+    ]);
+    setup(original, cutout);
+    URL.revokeObjectURL(resultUrl);
+
+    status.hidden = true;
+    work.hidden = false;
+    slider.value = 50;
+    setPos(50);
+    setBg("transparent");
+  } catch (error) {
+    console.error(error);
+    showError("The background could not be removed. Check your connection, then try again. Open this page from a local server, not a file:// address.");
+  }
+}
+
+function showError(message) {
+  status.hidden = false;
+  work.hidden = true;
+  drop.hidden = false;
+  statusText.textContent = message;
+  barFill.style.width = "0";
+}
+
+function setup(original, cutout) {
+  W = cutout.naturalWidth;
+  H = cutout.naturalHeight;
+  canvas.width = W;
+  canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+  ctx.drawImage(cutout, 0, 0, W, H);
+  before.src = srcUrl;
+  stage.style.aspectRatio = `${W} / ${H}`;
+  stage.style.maxWidth = `min(100%, ${(70 * W / H).toFixed(2)}vh)`;
+}
+
+/* ---------- Before/after comparison ---------- */
+function setPos(value) {
+  stage.style.setProperty("--pos", value + "%");
+}
+slider.addEventListener("input", () => setPos(slider.value));
+
+/* ---------- Background: transparent, color or image ---------- */
+function setBg(value) {
+  bg = value;
+  afterBox.classList.toggle("checker", value === "transparent");
+  afterBox.style.background = "";
+
+  if (value === "image" && bgUrl) {
+    afterBox.style.backgroundImage = `url(${bgUrl})`;
+    afterBox.style.backgroundSize = "cover";
+    afterBox.style.backgroundPosition = "center";
+  } else if (value !== "transparent") {
+    afterBox.style.background = value;
+    afterBox.style.backgroundImage = "none";
+  } else {
+    afterBox.style.backgroundImage = "none";
+  }
+
+  document.querySelectorAll("#swatches .sw[data-bg]").forEach(button => {
+    button.setAttribute("aria-pressed", String(button.dataset.bg === value));
+  });
+  $("bgImgBtn").setAttribute("aria-pressed", String(value === "image"));
+}
+
+document.querySelectorAll("#swatches .sw[data-bg]").forEach(button => {
+  button.addEventListener("click", () => setBg(button.dataset.bg));
+});
+$("custom").addEventListener("input", (e) => setBg(e.target.value));
+
+$("bgImgBtn").addEventListener("click", () => $("bgFile").click());
+$("bgFile").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file || !file.type.startsWith("image/")) return;
+
+  try {
+    const url = URL.createObjectURL(file);
+    const img = await loadImage(url);
+    if (bgUrl) URL.revokeObjectURL(bgUrl);
+    bgUrl = url;
+    bgImg = img;
+    $("bgImgBtn").style.backgroundImage = `url(${url})`;
+    $("bgImgBtn").classList.add("has-img");
+    setBg("image");
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+/* ---------- Reset and download ---------- */
+$("again").addEventListener("click", () => {
+  work.hidden = true;
+  status.hidden = true;
+  drop.hidden = false;
+  fileInput.value = "";
+  setPos(50);
+});
+
+$("download").addEventListener("click", () => {
+  const output = document.createElement("canvas");
+  output.width = W;
+  output.height = H;
+  const outputCtx = output.getContext("2d");
+
+  if (bg === "image" && bgImg) {
+    const scale = Math.max(W / bgImg.naturalWidth, H / bgImg.naturalHeight);
+    const width = bgImg.naturalWidth * scale;
+    const height = bgImg.naturalHeight * scale;
+    outputCtx.drawImage(bgImg, (W - width) / 2, (H - height) / 2, width, height);
+  } else if (bg !== "transparent") {
+    outputCtx.fillStyle = bg;
+    outputCtx.fillRect(0, 0, W, H);
+  }
+
+  outputCtx.drawImage(canvas, 0, 0);
+  output.toBlob((blob) => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "cutout.png";
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }, "image/png");
+});
+
+:root {
+  --paper: #e9edf2;
+  --surface: #f8fafc;
+  --ink: #17202e;
+  --muted: #5b6678;
+  --line: #c7cfdb;
+  --accent: #2b4fff;
+  --accent-ink: #fff;
+  --check-a: #ffffff;
+  --check-b: #d5dbe5;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #12161e;
+    --surface: #1b212c;
+    --ink: #e8ecf3;
+    --muted: #9aa5b8;
+    --line: #323b4b;
+    --accent: #6f8aff;
+    --accent-ink: #0d1226;
+    --check-a: #2a303b;
+    --check-b: #20252f;
+    color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font: 400 1rem/1.5 "Bricolage Grotesque", system-ui, sans-serif;
+}
+main { max-width: 880px; margin: 0 auto; padding: 40px 20px 64px; }
+h1 { font-size: clamp(2.4rem, 8vw, 4.2rem); line-height: 1; margin: 0 0 12px; font-weight: 800; letter-spacing: -0.03em; }
+.lede { color: var(--muted); max-width: 52ch; margin: 0 0 32px; }
+
+.checker {
+  background-color: var(--check-a);
+  background-image:
+    linear-gradient(45deg, var(--check-b) 25%, transparent 25%, transparent 75%, var(--check-b) 75%),
+    linear-gradient(45deg, var(--check-b) 25%, transparent 25%, transparent 75%, var(--check-b) 75%);
+  background-size: 20px 20px; background-position: 0 0, 10px 10px;
+}
+.drop {
+  display: grid; place-items: center; text-align: center; gap: 6px;
+  min-height: 280px; padding: 24px; cursor: pointer;
+  border: 2px dashed var(--line); border-radius: 6px; background: var(--surface);
+  transition: border-color .15s, background .15s;
+}
+.drop:hover, .drop.over { border-color: var(--accent); }
+.drop:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.drop strong { font-size: 1.25rem; }
+.drop span { color: var(--muted); }
+.work[hidden], .drop[hidden], .status[hidden] { display: none; }
+
+.status { margin: 0 0 16px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+.bar { height: 6px; background: var(--line); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+
+.stage { margin: 0 auto; width: 100%; position: relative; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); user-select: none; }
+.after { position: absolute; inset: 0; clip-path: inset(0 0 0 var(--pos, 50%)); }
+.handle { position: absolute; top: 0; bottom: 0; left: var(--pos, 50%); width: 2px; background: var(--accent); transform: translateX(-1px); pointer-events: none; }
+.handle::after { content: ""; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); border: 3px solid var(--surface); transform: translate(-50%, -50%); }
+.slider { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0; }
+
+.stage .before, .stage canvas { display: block; width: 100%; height: 100%; }
+.stage .before { position: absolute; inset: 0; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 16px; }
+.swatches { display: flex; gap: 8px; align-items: center; }
+.swatches span { color: var(--muted); margin-right: 4px; }
+.sw { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--line); cursor: pointer; padding: 0; }
+.sw[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+input[type="color"].sw { background: none; padding: 0; }
+.spacer { flex: 1; }
+button.btn { font: 600 1rem "Bricolage Grotesque", system-ui, sans-serif; padding: 10px 18px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.note { color: var(--muted); font-size: .9rem; margin-top: 28px; }
+footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; }
+footer a { color: var(--accent); }
+.maker { display: inline-flex; align-items: center; gap: 12px; color: var(--ink); text-decoration: none; }
+.maker img { display: block; height: 29px; width: auto; }
+.maker:hover span { text-decoration: underline; }
+footer p { margin: 12px 0 0; }
+@media (prefers-color-scheme: dark) { .maker img { filter: invert(1); } }
+[hidden] { display: none !important; }
+
+@media (max-width: 560px) {
+  main { padding: 28px 16px 48px; }
+  .controls { align-items: flex-start; }
+  .swatches { flex-wrap: wrap; }
+  .spacer { flex-basis: 100%; }
+}
