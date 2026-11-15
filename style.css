@@ -58,7 +58,7 @@ h1 { font-size: clamp(2.4rem, 8vw, 4.2rem); line-height: 1; margin: 0 0 12px; fo
 .bar { height: 6px; background: var(--line); border-radius: 3px; margin-top: 8px; overflow: hidden; }
 .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
 
-.stage { margin: 0 auto; width: 100%; position: relative; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); user-select: none; touch-action: none; }
+.stage { position: relative; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); user-select: none; touch-action: none; }
 .after { position: absolute; inset: 0; clip-path: inset(0 0 0 var(--pos, 50%)); }
 .handle { position: absolute; top: 0; bottom: 0; left: var(--pos, 50%); width: 2px; background: var(--accent); transform: translateX(-1px); pointer-events: none; }
 .handle::after { content: ""; position: absolute; top: 50%; left: 50%; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); border: 3px solid var(--surface); transform: translate(-50%, -50%); }
@@ -86,28 +86,8 @@ footer p { margin: 12px 0 0; }
 @media (prefers-color-scheme: dark) { .maker img { filter: invert(1); } }
 
 [hidden] { display: none !important; }
-.stage .before, .stage .ghost, .stage canvas { display: block; width: 100%; height: 100%; }
-.stage .before, .stage .ghost { position: absolute; inset: 0; }
-.stage .ghost { opacity: .4; pointer-events: none; }
-.stage.editing { cursor: none; }
-.stage.editing .slider, .stage.editing .handle { display: none; }
-.ring { position: absolute; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none;
-  border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.6); }
-.ring.erase { background: rgba(255, 60, 60, .18); }
-.ring.restore { background: rgba(40, 200, 120, .22); }
-
-.tabs { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
-.tab { font: 600 .95rem "Bricolage Grotesque", system-ui, sans-serif; padding: 8px 18px; border: 0; background: var(--surface); color: var(--ink); cursor: pointer; }
-.tab[aria-selected="true"], .seg .btn[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-
-.tools { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 18px; margin-top: 16px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
-.seg { display: inline-flex; }
-.seg .btn { border-radius: 0; }
-.seg .btn:first-child { border-radius: 6px 0 0 6px; }
-.seg .btn:last-child { border-radius: 0 6px 6px 0; margin-left: -1px; }
-.range, .check { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: .95rem; }
-.range input { width: 120px; accent-color: var(--accent); }
-.check input { accent-color: var(--accent); }
+.stage img { display: block; width: 100%; max-height: 70vh; object-fit: contain; }
+.after img { position: absolute; inset: 0; height: 100%; }
 
 .sw-img { background: var(--surface) center / cover; color: var(--muted); font: 600 1.1rem/1 "Bricolage Grotesque", system-ui, sans-serif; }
 .sw-img.has-img { color: transparent; }
