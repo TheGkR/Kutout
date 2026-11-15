@@ -80,3 +80,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 
 footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; }
 footer a { color: var(--accent); }
+
+.maker { display: inline-flex; align-items: center; gap: 12px; color: var(--ink); text-decoration: none; }
+.maker img { display: block; height: 29px; width: auto; }
+.maker:hover span { text-decoration: underline; }
+footer p { margin: 12px 0 0; }
+@media (prefers-color-scheme: dark) { .maker img { filter: invert(1); } }
