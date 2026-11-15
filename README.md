@@ -5,7 +5,7 @@
   </picture>
 </p>
 
-# Cutout
+# Kutout
 
 Remove the background from an image, right in your browser. An AI segmentation model runs on your device, so your images are never uploaded to a server.
 
